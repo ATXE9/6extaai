@@ -413,6 +413,12 @@
     }
 
     const aiBody = addTurn('ai', '…');
+    let gotFirstText = false;
+    const stallTimer = setTimeout(() => {
+      if (!gotFirstText) {
+        setStatus('Bir onay penceresi bekleniyor olabilir — ekranı kontrol et');
+      }
+    }, 7000);
 
     try {
       const systemPreamble = {
@@ -422,6 +428,7 @@
       const result = await sampleFn([systemPreamble, ...history], {
         modelTier: 'quick',
         onText: ({ text: whole }) => {
+          gotFirstText = true;
           aiBody.textContent = whole;
           chatEl.scrollTop = chatEl.scrollHeight;
         }
@@ -433,8 +440,10 @@
         speak(finalText);
       }
     } catch (err) {
-      aiBody.textContent = 'Hata: ' + (err && err.code ? err.code : 'bilinmiyor');
+      const code = err && err.code ? err.code : 'bilinmiyor';
+      aiBody.textContent = 'Hata (' + code + '): ' + (err && err.text ? err.text : 'cevap alınamadı');
     } finally {
+      clearTimeout(stallTimer);
       orbWrap.classList.remove('thinking');
       setStatus('Hazır');
     }
